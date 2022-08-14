@@ -10,7 +10,7 @@
             "request": "launch",
             "program": "${file}",
             "console": "integratedTerminal",
-            "cwd":"/home/kali/nightmare/modules/08-bof_dynamic/csawquals17_svc",
+            "cwd":"${fileDirname}",
             "justMyCode": true
         }
     ]
